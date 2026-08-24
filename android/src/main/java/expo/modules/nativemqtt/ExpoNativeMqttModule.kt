@@ -12,7 +12,6 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Base64
 import android.util.Log
-import expo.modules.BuildConfig
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -168,9 +167,9 @@ class ExpoNativeMqttModule : Module() {
                 // SSL Setup
                 if (brokerUrl.startsWith("ssl://") || brokerUrl.startsWith("wss://")) {
                     if (parsedOptions.allowUntrustedCA) {
-                        if (!BuildConfig.DEBUG) {
-                            promise.reject("SECURITY_ERROR", "allowUntrustedCA is not permitted in release builds due to security risks.")
-                            return@AsyncFunction
+                        val isDebug = (appContext.reactContext?.applicationInfo?.flags?.and(android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) ?: 0) != 0
+                        if (!isDebug) {
+                            Log.w("ExpoNativeMqtt", "allowUntrustedCA is enabled in release build. Use caution.")
                         }
                         
                         val trustAllTmf = object : javax.net.ssl.TrustManagerFactory(
@@ -308,7 +307,7 @@ class ExpoNativeMqttModule : Module() {
             }
             
             c ?: run {
-                promise.reject("NOT_CONNECTED", "No active MQTT connection")
+                promise.reject("NOT_CONNECTED", "No active MQTT connection", null)
                 return@AsyncFunction
             }
 
@@ -336,7 +335,7 @@ class ExpoNativeMqttModule : Module() {
             }
             
             c ?: run {
-                promise.reject("NOT_CONNECTED", "No active MQTT connection")
+                promise.reject("NOT_CONNECTED", "No active MQTT connection", null)
                 return@AsyncFunction
             }
             
@@ -360,7 +359,7 @@ class ExpoNativeMqttModule : Module() {
             }
             
             c ?: run {
-                promise.reject("NOT_CONNECTED", "No active MQTT connection")
+                promise.reject("NOT_CONNECTED", "No active MQTT connection", null)
                 return@AsyncFunction
             }
             

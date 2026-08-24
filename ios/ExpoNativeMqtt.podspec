@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name           = 'ExpoNativeMqtt'
-  s.version        = '0.4.0'
+  s.version        = '0.4.1'
   s.summary        = 'Native MQTT client for Expo with auto-reconnect and offline delivery'
   s.description    = 'Native MQTT client for Expo using CocoaMQTT internally'
   s.author         = 'expo-native-mqtt contributors'

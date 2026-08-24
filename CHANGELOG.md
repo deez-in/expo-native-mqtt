@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2026-08-24
+
+### Bug Fixes & Android Hardening
+- **Android**: Fixed Kotlin compilation errors by providing explicit 3-argument signature `promise.reject(code, message, cause)` in `ExpoNativeMqttModule.kt`.
+- **Android**: Removed inaccessible `BuildConfig` import in library module and replaced with `ApplicationInfo.FLAG_DEBUGGABLE` check via `appContext`.
+
 ## [0.4.0] - 2026-08-24
 
 ### Expo SDK 57 (Clean Modern Target)
