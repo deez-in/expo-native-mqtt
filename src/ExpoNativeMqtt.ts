@@ -1,8 +1,12 @@
-import { requireNativeModule, EventEmitter, Subscription } from 'expo-modules-core';
+import { requireNativeModule, EventEmitter, type EventSubscription } from 'expo-modules-core';
 import { MqttConnectOptions, MqttEventName, MqttEventMap } from './ExpoNativeMqtt.types';
 
+type MqttModuleEventsMap = {
+  [K in MqttEventName]: (event: MqttEventMap[K]) => void;
+};
+
 const ExpoNativeMqtt = requireNativeModule('ExpoNativeMqtt');
-const emitter = new EventEmitter(ExpoNativeMqtt);
+const emitter = new EventEmitter<MqttModuleEventsMap>(ExpoNativeMqtt);
 
 export default {
   // Methods
@@ -79,7 +83,10 @@ export default {
   addListener<E extends MqttEventName>(
     eventName: E,
     listener: (event: MqttEventMap[E]) => void
-  ): Subscription {
-    return emitter.addListener(eventName, listener as (event: any) => void);
+  ): EventSubscription {
+    return (emitter.addListener as (name: string, fn: (data: any) => void) => EventSubscription)(
+      eventName,
+      listener
+    );
   }
 };

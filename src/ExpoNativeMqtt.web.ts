@@ -1,3 +1,4 @@
+import type { EventSubscription } from 'expo-modules-core';
 import { MqttConnectOptions, MqttEventName, MqttEventMap } from './ExpoNativeMqtt.types';
 
 const webNotSupported = () =>
@@ -37,7 +38,7 @@ export default {
   addListener<E extends MqttEventName>(
     _eventName: E,
     _listener: (event: MqttEventMap[E]) => void
-  ) {
+  ): EventSubscription {
     return {
       remove: () => {}
     };

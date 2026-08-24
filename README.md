@@ -152,8 +152,8 @@ Publishes a message to a topic. To maximize native performance, this method excl
 - `qos`: `0`, `1`, or `2` (default `0`)
 - `retained`: Boolean flag (default `false`)
 
-#### `addListener(eventName, listener): Subscription`
-Registers a strongly-typed event listener. Returns a `Subscription` object with a `.remove()` method.
+#### `addListener(eventName, listener): EventSubscription`
+Registers a strongly-typed event listener. Returns an `EventSubscription` object with a `.remove()` method.
 
 ---
 

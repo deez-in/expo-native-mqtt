@@ -1,3 +1,5 @@
+export type { EventSubscription } from 'expo-modules-core';
+
 export type MqttEventName =
   | 'onMqttConnected'
   | 'onMqttDisconnected'
