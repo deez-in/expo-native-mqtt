@@ -1,8 +1,45 @@
+import { MqttConnectOptions, MqttEventName, MqttEventMap } from './ExpoNativeMqtt.types';
+
+const webNotSupported = () =>
+  Promise.reject(new Error('ExpoNativeMqtt is only supported on native iOS and Android.'));
+
 export default {
-  connect() { throw new Error('ExpoNativeMqtt is not supported on web'); },
-  disconnect() { throw new Error('ExpoNativeMqtt is not supported on web'); },
-  subscribe() { throw new Error('ExpoNativeMqtt is not supported on web'); },
-  unsubscribe() { throw new Error('ExpoNativeMqtt is not supported on web'); },
-  publish() { throw new Error('ExpoNativeMqtt is not supported on web'); },
-  addListener() { throw new Error('ExpoNativeMqtt is not supported on web'); }
+  connect(
+    _brokerUrl: string,
+    _username?: string,
+    _password?: string,
+    _options?: MqttConnectOptions
+  ): Promise<string> {
+    return webNotSupported();
+  },
+
+  disconnect(): Promise<string> {
+    return Promise.resolve('Disconnected');
+  },
+
+  subscribe(_topic: string, _qos: number = 0): Promise<string> {
+    return webNotSupported();
+  },
+
+  unsubscribe(_topic: string): Promise<string> {
+    return webNotSupported();
+  },
+
+  publish(
+    _topic: string,
+    _base64Payload: string,
+    _qos: number = 0,
+    _retained: boolean = false
+  ): Promise<string> {
+    return webNotSupported();
+  },
+
+  addListener<E extends MqttEventName>(
+    _eventName: E,
+    _listener: (event: MqttEventMap[E]) => void
+  ) {
+    return {
+      remove: () => {}
+    };
+  }
 };

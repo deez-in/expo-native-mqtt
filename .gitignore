@@ -1,0 +1,6 @@
+node_modules/
+build/
+.expo/
+*.tsbuildinfo
+*.log
+.DS_Store

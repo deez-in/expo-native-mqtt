@@ -8,7 +8,7 @@ function withMqttModules(config) {
     const snippet = `\n  # [expo-native-mqtt] Enable modular headers for CocoaMQTT dependency\n  pod 'MqttCocoaAsyncSocket', :modular_headers => true`;
 
     const expoModulesRegex = /(use_expo_modules!)/;
-    if (expoModulesRegex.test(podfile)) {
+    if (!podfile.includes('MqttCocoaAsyncSocket') && expoModulesRegex.test(podfile)) {
       podfile = podfile.replace(expoModulesRegex, `$1${snippet}`);
     }
 
@@ -31,7 +31,7 @@ function withMqttModules(config) {
 `;
 
     const androidRegex = /(android\s*\{)/;
-    if (androidRegex.test(buildGradle)) {
+    if (!buildGradle.includes('excludes += "**/INDEX.LIST"') && androidRegex.test(buildGradle)) {
       buildGradle = buildGradle.replace(androidRegex, `$1${packagingSnippet}`);
     }
 
