@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-08-24
+
+### Expo SDK 57 (Clean Modern Target)
+- **Peer Dependencies**: Set peer dependencies strictly to Expo `>=57.0.0` and React Native `>=0.86.0`.
+- **Dependencies**: Upgraded `expo-modules-core` to `^57.0.13` and `@expo/config-plugins` to `^57.0.9`.
+- **TypeScript**: Dropped legacy `Subscription` alias in favor of Expo's `EventSubscription` exclusively.
+- **iOS**: Updated minimum deployment target to iOS `15.1` in Podspec.
+- **Android**: Verified compileSdk 36 (Android 16) and targetSdk 36 compatibility.
+
 ## [0.3.0] - 2026-08-23
 
 ### Breaking Changes & Binary Core
