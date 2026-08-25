@@ -1,4 +1,4 @@
-const { withPodfile, withAppBuildGradle } = require("@expo/config-plugins");
+const { withPodfile, withAppBuildGradle } = require("expo/config-plugins");
 
 function withMqttModules(config) {
   // 1) iOS podfile update

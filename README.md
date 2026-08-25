@@ -15,14 +15,24 @@ High-performance native MQTT client for Expo and React Native apps on iOS and An
 
 ---
 
+## Compatibility
+
+| Expo SDK | React Native | iOS | Android |
+|---|---|---|---|
+| **SDK 57+** | `>= 0.86.0` | `>= 15.1` | `API 24+ (Android 7.0+)` |
+
+---
+
 ## Installation
 
 ```bash
+npx expo install expo-native-mqtt
+# or
+bun add expo-native-mqtt
+# or
 npm install expo-native-mqtt
 # or
 yarn add expo-native-mqtt
-# or
-npx expo install expo-native-mqtt
 ```
 
 ### Configure Expo Config Plugin
@@ -51,11 +61,21 @@ npx expo run:android
 
 ## Quick Start
 
+### Full Example
+
 ```typescript
 import React, { useEffect } from 'react';
 import { View, Button } from 'react-native';
 import ExpoNativeMqtt from 'expo-native-mqtt';
-// Use a library like 'base64-js' or react-native's atob/btoa for encoding/decoding
+
+// Helper functions for string payloads (or use Buffer / TextEncoder / atob)
+function stringToBase64(str: string): string {
+  return Buffer.from(str, 'utf8').toString('base64');
+}
+
+function base64ToString(b64: string): string {
+  return Buffer.from(b64, 'base64').toString('utf8');
+}
 
 export default function App() {
   useEffect(() => {

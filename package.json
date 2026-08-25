@@ -1,6 +1,6 @@
 {
   "name": "expo-native-mqtt",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Native MQTT client for Expo with auto-reconnect and offline delivery support",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -27,15 +27,18 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "expo": ">=57.0.0",
-    "react-native": ">=0.86.0"
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
   },
   "devDependencies": {
-    "@expo/config-plugins": "^57.0.9",
     "@types/jest": "^29.5.14",
-    "expo-modules-core": "^57.0.13",
+    "@types/react": "~19.2.4",
+    "expo": "^57.0.16",
     "jest": "^29.7.0",
+    "react": "19.2.3",
+    "react-native": "0.86.2",
     "ts-jest": "^29.4.12",
-    "typescript": "^5.4.0"
+    "typescript": "~6.0.3"
   }
 }

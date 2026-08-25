@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.2] - 2026-08-25
+
+### Tooling & Expo SDK 57 Ecosystem
+- **Config Plugin**: Migrated config plugin import to `expo/config-plugins` standard sub-export.
+- **Dependencies**: Aligned dependencies and peer dependencies for full Expo SDK 57 compatibility.
+- **CI / CD**: Added automated GitHub Actions release workflow with keyless OIDC `--provenance` npm publishing.
+- **TypeScript**: Fixed test suite type definitions in `tsconfig.json`.
+
 ## [0.4.1] - 2026-08-24
 
 ### Bug Fixes & Android Hardening
