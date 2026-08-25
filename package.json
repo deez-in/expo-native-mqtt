@@ -26,6 +26,14 @@
     "mqtt"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deez-in/expo-native-mqtt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/deez-in/expo-native-mqtt/issues"
+  },
+  "homepage": "https://github.com/deez-in/expo-native-mqtt#readme",
   "peerDependencies": {
     "expo": "*",
     "react": "*",
