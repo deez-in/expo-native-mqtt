@@ -219,13 +219,16 @@ public class ExpoNativeMqttModule: Module {
       }
       let cocoaQos = CocoaMQTTQoS(rawValue: UInt8(qos)) ?? .qos0
       let bytes = [UInt8](data)
-      let msgId = mqttClient.publish(topic, withBytes: bytes, qos: cocoaQos, retained: retained)
+      let message = CocoaMQTTMessage(topic: topic, payload: bytes, qos: cocoaQos, retained: retained)
+      let msgId = mqttClient.publish(message)
       
-      if qos == 0 || msgId == nil {
+      if msgId == -1 {
+        promise.reject("PUBLISH_FAILED", "Failed to publish message")
+      } else if qos == 0 {
         promise.resolve("Published")
       } else {
         self.lock.lock()
-        self.pendingPublishPromises[msgId!] = promise
+        self.pendingPublishPromises[UInt16(msgId)] = promise
         self.lock.unlock()
       }
     }
@@ -404,6 +407,13 @@ extension ExpoNativeMqttModule: CocoaMQTTDelegate {
   public func mqtt(_ mqtt: CocoaMQTT, didPublishMessage message: CocoaMQTTMessage, id: UInt16) { }
 
   public func mqtt(_ mqtt: CocoaMQTT, didPublishAck id: UInt16) {
+    lock.lock()
+    let promise = pendingPublishPromises.removeValue(forKey: id)
+    lock.unlock()
+    promise?.resolve("Published")
+  }
+
+  public func mqtt(_ mqtt: CocoaMQTT, didPublishComplete id: UInt16) {
     lock.lock()
     let promise = pendingPublishPromises.removeValue(forKey: id)
     lock.unlock()
