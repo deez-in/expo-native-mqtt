@@ -28,7 +28,7 @@ export default {
 
   publish(
     _topic: string,
-    _base64Payload: string,
+    _payload: Uint8Array,
     _qos: number = 0,
     _retained: boolean = false
   ): Promise<string> {

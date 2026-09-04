@@ -10,7 +10,6 @@ import com.hivemq.client.mqtt.MqttGlobalPublishFilter
 import com.hivemq.client.mqtt.mqtt3.message.connect.connack.Mqtt3ConnAck
 import android.os.Handler
 import android.os.Looper
-import android.util.Base64
 import android.util.Log
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -24,10 +23,29 @@ import kotlin.random.Random
 
 data class MqttWillOption(
     val topic: String,
-    val payloadBase64: String,
+    val payload: ByteArray,
     val qos: Int,
     val retained: Boolean
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as MqttWillOption
+        if (topic != other.topic) return false
+        if (!payload.contentEquals(other.payload)) return false
+        if (qos != other.qos) return false
+        if (retained != other.retained) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = topic.hashCode()
+        result = 31 * result + payload.contentHashCode()
+        result = 31 * result + qos
+        result = 31 * result + retained.hashCode()
+        return result
+    }
+}
 
 data class MqttConnectOptions(
     val clientId: String,
@@ -78,7 +96,7 @@ class ExpoNativeMqttModule : Module() {
             }
         }
 
-        AsyncFunction("connect") { brokerUrl: String, username: String?, password: String?, options: Map<String, Any>, promise: Promise ->
+        AsyncFunction("connect") { brokerUrl: String, username: String?, password: String?, options: Map<String, Any>, willPayload: ByteArray?, promise: Promise ->
             try {
                 // Parse options securely
                 val parsedOptions = MqttConnectOptions(
@@ -93,7 +111,7 @@ class ExpoNativeMqttModule : Module() {
                     will = (options["will"] as? Map<String, Any>)?.let { willMap ->
                         MqttWillOption(
                             topic = willMap["topic"] as? String ?: "",
-                            payloadBase64 = willMap["payloadBase64"] as? String ?: "",
+                            payload = willPayload ?: ByteArray(0),
                             qos = (willMap["qos"] as? Number)?.toInt() ?: 0,
                             retained = willMap["retained"] as? Boolean ?: false
                         )
@@ -218,10 +236,9 @@ class ExpoNativeMqttModule : Module() {
                         return@publishes
                     }
 
-                    val payloadBase64 = Base64.encodeToString(payloadBytes, Base64.NO_WRAP)
                     sendEvent("onMqttMessageReceived", mapOf(
                         "topic" to publish.topic.toString(),
-                        "payloadBase64" to payloadBase64,
+                        "payload" to payloadBytes,
                         "qos" to publish.qos.code,
                         "retained" to publish.isRetain
                     ))
@@ -243,16 +260,15 @@ class ExpoNativeMqttModule : Module() {
 
                 parsedOptions.will?.let { willOpt ->
                     try {
-                        val willBytes = Base64.decode(willOpt.payloadBase64, Base64.DEFAULT)
                         val willQos = MqttQos.fromCode(willOpt.qos) ?: MqttQos.AT_MOST_ONCE
                         connectBuilder.willPublish()
                             .topic(willOpt.topic)
-                            .payload(willBytes)
+                            .payload(willOpt.payload)
                             .qos(willQos)
                             .retain(willOpt.retained)
                             .applyWillPublish()
                     } catch (e: Exception) {
-                        promise.reject("CONNECT_ERROR", "Invalid Base64 in will message", e)
+                        promise.reject("CONNECT_ERROR", "Failed to configure will message: ${e.message}", e)
                         return@AsyncFunction
                     }
                 }
@@ -352,7 +368,7 @@ class ExpoNativeMqttModule : Module() {
                 }
         }
 
-        AsyncFunction("publish") { topic: String, base64Payload: String, qos: Int, retained: Boolean, promise: Promise ->
+        AsyncFunction("publish") { topic: String, payload: ByteArray, qos: Int, retained: Boolean, promise: Promise ->
             val c: Mqtt3AsyncClient?
             synchronized(lock) {
                 c = client
@@ -364,12 +380,11 @@ class ExpoNativeMqttModule : Module() {
             }
             
             try {
-                val bytes = Base64.decode(base64Payload, Base64.DEFAULT)
                 val mqttQos = MqttQos.fromCode(qos) ?: MqttQos.AT_MOST_ONCE
 
                 c.publishWith()
                     ?.topic(topic)
-                    ?.payload(bytes)
+                    ?.payload(payload)
                     ?.qos(mqttQos)
                     ?.retain(retained)
                     ?.send()
@@ -381,7 +396,7 @@ class ExpoNativeMqttModule : Module() {
                         }
                     }
             } catch (e: Exception) {
-                promise.reject("INVALID_PAYLOAD", "Failed to decode base64 payload: ${e.message}", e)
+                promise.reject("PUBLISH_ERROR", e.message, e)
             }
         }
     }
@@ -452,11 +467,10 @@ class ExpoNativeMqttModule : Module() {
                     // Re-apply will message on reconnect
                     optionsToUse?.will?.let { willOpt ->
                         try {
-                            val willBytes = Base64.decode(willOpt.payloadBase64, Base64.DEFAULT)
                             val willQos = MqttQos.fromCode(willOpt.qos) ?: MqttQos.AT_MOST_ONCE
                             connectBuilder.willPublish()
                                 .topic(willOpt.topic)
-                                .payload(willBytes)
+                                .payload(willOpt.payload)
                                 .qos(willQos)
                                 .retain(willOpt.retained)
                                 .applyWillPublish()

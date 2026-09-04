@@ -49,14 +49,30 @@ describe('ExpoNativeMqtt (TypeScript wrapper & input validation)', () => {
   });
 
   it('rejects invalid publish arguments', async () => {
-    await expect(ExpoNativeMqtt.publish('', 'SGVsbG8=')).rejects.toThrow('topic must be a valid non-empty string');
+    const validBytes = new Uint8Array([1, 2, 3]);
+    await expect(ExpoNativeMqtt.publish('', validBytes)).rejects.toThrow('topic must be a valid non-empty string');
     // @ts-expect-error testing invalid type at runtime
-    await expect(ExpoNativeMqtt.publish('test', null)).rejects.toThrow('base64Payload must be a valid non-empty base64 string');
-    await expect(ExpoNativeMqtt.publish('test', 'SGVsbG8=', 4)).rejects.toThrow('QoS must be an integer between 0 and 2');
+    await expect(ExpoNativeMqtt.publish('test', null)).rejects.toThrow('payload must be a valid Uint8Array');
+    // @ts-expect-error testing string type at runtime
+    await expect(ExpoNativeMqtt.publish('test', 'SGVsbG8=')).rejects.toThrow('payload must be a valid Uint8Array');
+    await expect(ExpoNativeMqtt.publish('test', validBytes, 4)).rejects.toThrow('QoS must be an integer between 0 and 2');
 
     // Publish wildcard validation
-    await expect(ExpoNativeMqtt.publish('test/+', 'SGVsbG8=')).rejects.toThrow('Publish topics cannot contain wildcards (+ or #)');
-    await expect(ExpoNativeMqtt.publish('test/#', 'SGVsbG8=')).rejects.toThrow('Publish topics cannot contain wildcards (+ or #)');
+    await expect(ExpoNativeMqtt.publish('test/+', validBytes)).rejects.toThrow('Publish topics cannot contain wildcards (+ or #)');
+    await expect(ExpoNativeMqtt.publish('test/#', validBytes)).rejects.toThrow('Publish topics cannot contain wildcards (+ or #)');
+  });
+
+  it('publishes valid binary Uint8Array payload', async () => {
+    const payload = new Uint8Array([10, 20, 30]);
+    await expect(ExpoNativeMqtt.publish('test/binary', payload, 1, true)).resolves.toBe('Published');
+  });
+
+  it('validates will options on connect', async () => {
+    await expect(ExpoNativeMqtt.connect('tcp://localhost:1883', undefined, undefined, { will: { topic: '', payload: new Uint8Array([1]), qos: 0, retained: false } })).rejects.toThrow('will.topic must be a valid non-empty string');
+    // @ts-expect-error testing invalid will.payload
+    await expect(ExpoNativeMqtt.connect('tcp://localhost:1883', undefined, undefined, { will: { topic: 'status', payload: 'not-bytes', qos: 0, retained: false } })).rejects.toThrow('will.payload must be a valid Uint8Array');
+    await expect(ExpoNativeMqtt.connect('tcp://localhost:1883', undefined, undefined, { will: { topic: 'status', payload: new Uint8Array([1]), qos: 5, retained: false } })).rejects.toThrow('will.qos must be an integer between 0 and 2');
+    await expect(ExpoNativeMqtt.connect('tcp://localhost:1883', undefined, undefined, { will: { topic: 'status', payload: new Uint8Array([1]), qos: 1, retained: false } })).resolves.toBe('Connected');
   });
 
   it('allows adding and removing typed listeners', () => {
@@ -72,7 +88,7 @@ describe('ExpoNativeMqtt.web (Web fallback safety)', () => {
   it('returns clean rejected promises without unhandled crash', async () => {
     await expect(ExpoNativeMqttWeb.connect('tcp://localhost:1883')).rejects.toThrow('ExpoNativeMqtt is only supported on native iOS and Android.');
     await expect(ExpoNativeMqttWeb.subscribe('test')).rejects.toThrow('ExpoNativeMqtt is only supported on native iOS and Android.');
-    await expect(ExpoNativeMqttWeb.publish('test', 'msg')).rejects.toThrow('ExpoNativeMqtt is only supported on native iOS and Android.');
+    await expect(ExpoNativeMqttWeb.publish('test', new Uint8Array([1, 2]))).rejects.toThrow('ExpoNativeMqtt is only supported on native iOS and Android.');
   });
 
   it('provides safe no-op disconnect and subscription on web', async () => {

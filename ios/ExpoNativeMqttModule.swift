@@ -4,7 +4,7 @@ import Foundation
 
 struct MqttWillOption {
   let topic: String
-  let payloadBase64: String
+  let payload: Data
   let qos: Int
   let retained: Bool
 }
@@ -59,7 +59,7 @@ public class ExpoNativeMqttModule: Module {
       "onMqttReconnecting"
     )
 
-    AsyncFunction("connect") { (brokerUrl: String, username: String?, password: String?, options: [String: Any], promise: Promise) in
+    AsyncFunction("connect") { (brokerUrl: String, username: String?, password: String?, options: [String: Any], willPayload: Data?, promise: Promise) in
       guard let url = URL(string: brokerUrl) else {
         promise.reject("INVALID_URL", "Invalid broker URL")
         return
@@ -70,11 +70,10 @@ public class ExpoNativeMqttModule: Module {
       
       let willOpt: MqttWillOption?
       if let willDict = options["will"] as? [String: Any],
-         let topic = willDict["topic"] as? String,
-         let payloadBase64 = willDict["payloadBase64"] as? String {
+         let topic = willDict["topic"] as? String {
         willOpt = MqttWillOption(
           topic: topic,
-          payloadBase64: payloadBase64,
+          payload: willPayload ?? Data(),
           qos: willDict["qos"] as? Int ?? 0,
           retained: willDict["retained"] as? Bool ?? false
         )
@@ -117,9 +116,9 @@ public class ExpoNativeMqttModule: Module {
       self.mqtt?.cleanSession = parsedOptions.cleanSession
       self.mqtt?.delegate = self
       
-      if let will = parsedOptions.will, let willData = Data(base64Encoded: will.payloadBase64) {
+      if let will = parsedOptions.will {
         let cocoaQos = CocoaMQTTQoS(rawValue: UInt8(will.qos)) ?? .qos0
-        let willMessage = CocoaMQTTMessage(topic: will.topic, payload: [UInt8](willData), qos: cocoaQos, retained: will.retained)
+        let willMessage = CocoaMQTTMessage(topic: will.topic, payload: [UInt8](will.payload), qos: cocoaQos, retained: will.retained)
         self.mqtt?.willMessage = willMessage
       }
 
@@ -203,7 +202,7 @@ public class ExpoNativeMqttModule: Module {
       mqttClient.unsubscribe(topic)
     }
 
-    AsyncFunction("publish") { (topic: String, base64Payload: String, qos: Int, retained: Bool, promise: Promise) in
+    AsyncFunction("publish") { (topic: String, payload: Data, qos: Int, retained: Bool, promise: Promise) in
       self.lock.lock()
       let client = self.mqtt
       self.lock.unlock()
@@ -213,12 +212,8 @@ public class ExpoNativeMqttModule: Module {
         return
       }
       
-      guard let data = Data(base64Encoded: base64Payload) else {
-        promise.reject("INVALID_PAYLOAD", "Invalid base64 payload")
-        return
-      }
       let cocoaQos = CocoaMQTTQoS(rawValue: UInt8(qos)) ?? .qos0
-      let bytes = [UInt8](data)
+      let bytes = [UInt8](payload)
       let message = CocoaMQTTMessage(topic: topic, payload: bytes, qos: cocoaQos, retained: retained)
       let msgId = mqttClient.publish(message)
       
@@ -368,11 +363,11 @@ extension ExpoNativeMqttModule: CocoaMQTTDelegate {
       return
     }
 
-    let payloadBase64 = Data(payloadBytes).base64EncodedString()
+    let payloadData = Data(payloadBytes)
 
     sendEvent("onMqttMessageReceived", [
       "topic": message.topic,
-      "payloadBase64": payloadBase64,
+      "payload": payloadData,
       "qos": Int(message.qos.rawValue),
       "retained": message.retained
     ])

@@ -10,7 +10,7 @@ High-performance native MQTT client for Expo and React Native apps on iOS and An
 - 🔄 **Auto-Reconnect with Backoff**: Native-level exponential backoff with jitter and configurable retry limits.
 - 📦 **Offline Message Queuing**: Persistent session support (`cleanSession: false`) for receiving queued messages after reconnecting.
 - 🔒 **TLS / SSL**: Secure MQTT connections with strict certificate validation by default. *(TODO: Implement Certificate Pinning in a future build).*
-- 🧬 **Binary-Only Core**: Lightning-fast message passing. The bridge only sends and receives Base64 encoded strings, eliminating duplicate UTF-8 decoding on the native thread.
+- 🧬 **Direct Binary Core**: Lightning-fast message passing. The bridge directly accepts and returns raw binary `Uint8Array` data, completely eliminating Base64 and UTF-8 encoding/decoding overhead.
 - 🎯 **Type-Safe**: Full TypeScript definitions with typed event maps.
 
 ---
@@ -68,15 +68,6 @@ import React, { useEffect } from 'react';
 import { View, Button } from 'react-native';
 import ExpoNativeMqtt from 'expo-native-mqtt';
 
-// Helper functions for string payloads (or use Buffer / TextEncoder / atob)
-function stringToBase64(str: string): string {
-  return Buffer.from(str, 'utf8').toString('base64');
-}
-
-function base64ToString(b64: string): string {
-  return Buffer.from(b64, 'base64').toString('utf8');
-}
-
 export default function App() {
   useEffect(() => {
     // 1. Listen for connection events
@@ -86,11 +77,10 @@ export default function App() {
       ExpoNativeMqtt.subscribe('sensors/temperature', 1);
     });
 
-    // 2. Listen for incoming messages (All messages arrive as Base64)
+    // 2. Listen for incoming messages (All messages arrive as Uint8Array)
     const subMessage = ExpoNativeMqtt.addListener('onMqttMessageReceived', (msg) => {
-      // If expecting a string, you must decode the Base64 payload in JS
-      // e.g., using Buffer.from(msg.payloadBase64, 'base64').toString('utf8')
-      console.log(`[${msg.topic}] (QoS ${msg.qos}): ${msg.payloadBase64}`);
+      const text = new TextDecoder().decode(msg.payload);
+      console.log(`[${msg.topic}] (QoS ${msg.qos}): ${text}`);
     });
 
     // 3. Listen for errors and reconnects
@@ -108,7 +98,13 @@ export default function App() {
       cleanSession: false, // enables offline delivery
       autoReconnect: true,
       reconnectDelay: 3000,
-      maxReconnectAttempts: 10
+      maxReconnectAttempts: 10,
+      will: {
+        topic: 'status',
+        payload: new TextEncoder().encode('offline'),
+        qos: 1,
+        retained: true,
+      },
     }).catch((err) => {
       console.error('Initial connection failed:', err);
     });
@@ -124,9 +120,9 @@ export default function App() {
 
   const sendMessage = async () => {
     try {
-      // You must encode your string payload to Base64 before publishing
-      // e.g., 'eyB0ZW1wOiAyNC41IH0=' is Base64 for '{ temp: 24.5 }'
-      await ExpoNativeMqtt.publish('sensors/temperature', 'eyB0ZW1wOiAyNC41IH0=', 1);
+      // Publish binary Uint8Array payload directly
+      const payload = new TextEncoder().encode(JSON.stringify({ temp: 24.5 }));
+      await ExpoNativeMqtt.publish('sensors/temperature', payload, 1);
     } catch (err) {
       console.error('Publish failed:', err);
     }
@@ -165,10 +161,10 @@ Subscribes to an MQTT topic filter. Resolves once acknowledged by the broker.
 #### `unsubscribe(topic): Promise<string>`
 Unsubscribes from an MQTT topic filter. Resolves once acknowledged by the broker.
 
-#### `publish(topic, base64Payload, qos?, retained?): Promise<string>`
-Publishes a message to a topic. To maximize native performance, this method exclusively accepts **Base64** strings. You must convert your strings or binary data to Base64 in JavaScript before calling this method.
+#### `publish(topic, payload, qos?, retained?): Promise<string>`
+Publishes a message to a topic. Directly accepts a **Uint8Array** binary payload for maximum native performance.
 - `topic`: Destination topic (cannot contain wildcards)
-- `base64Payload`: Base64 string representation of your payload
+- `payload`: Binary `Uint8Array` payload
 - `qos`: `0`, `1`, or `2` (default `0`)
 - `retained`: Boolean flag (default `false`)
 
@@ -193,7 +189,7 @@ Registers a strongly-typed event listener. Returns an `EventSubscription` object
 
 **Last Will Object (`will`):**
 - `topic` (`string`): The topic to publish the will message to.
-- `payloadBase64` (`string`): The Base64 encoded payload of the will message.
+- `payload` (`Uint8Array`): The binary payload of the will message.
 - `qos` (`number`): Quality of Service level (0, 1, or 2).
 - `retained` (`boolean`): Whether the will message should be retained.
 
@@ -216,7 +212,7 @@ Registers a strongly-typed event listener. Returns an `EventSubscription` object
 ```typescript
 interface MqttMessage {
   topic: string;
-  payloadBase64: string; // Raw bytes encoded as Base64. You must decode this in JS if you expect a string.
+  payload: Uint8Array; // Raw message bytes as Uint8Array
   qos: number; // 0, 1, or 2
   retained: boolean;
 }

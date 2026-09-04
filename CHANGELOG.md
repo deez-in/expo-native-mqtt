@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-09-04
+
+### Breaking Changes & Direct Binary Core
+- **API**: Completely removed Base64 encoding and decoding.
+- **API**: Incoming messages (`MqttMessage`) now deliver raw binary `payload: Uint8Array` instead of `payloadBase64: string`.
+- **API**: `publish(topic, payload, qos, retained)` now strictly accepts a `Uint8Array` binary payload.
+- **API**: Last Will (`MqttConnectOptions.will.payload`) now strictly accepts `Uint8Array`.
+- **Performance**: Android (`ByteArray`) and iOS (`Data`) native modules interface directly with Expo Modules Core's native TypedArray memory converters, eliminating intermediate Base64 string allocations.
+
 ## [0.4.2] - 2026-08-25
 
 ### Tooling & Expo SDK 57 Ecosystem

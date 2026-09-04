@@ -20,7 +20,7 @@ export interface MqttConnectOptions {
   maxPayloadSize?: number; // bytes, default: 262144 (256KB)
   will?: {
     topic: string;
-    payloadBase64: string;
+    payload: Uint8Array;
     qos: number;
     retained: boolean;
   };
@@ -28,7 +28,7 @@ export interface MqttConnectOptions {
 
 export interface MqttMessage {
   topic: string;
-  payloadBase64: string;
+  payload: Uint8Array;
   qos: number;
   retained: boolean;
 }

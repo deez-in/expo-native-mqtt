@@ -19,7 +19,35 @@ export default {
     if (!brokerUrl || typeof brokerUrl !== 'string') {
       return Promise.reject(new Error('brokerUrl must be a valid non-empty string'));
     }
-    return ExpoNativeMqtt.connect(brokerUrl, username || null, password || null, options || {});
+
+    const { will, ...restOptions } = options || {};
+    let willPayload: Uint8Array | null = null;
+    let nativeWill: any = undefined;
+
+    if (will) {
+      if (!will.topic || typeof will.topic !== 'string') {
+        return Promise.reject(new Error('will.topic must be a valid non-empty string'));
+      }
+      if (!(will.payload instanceof Uint8Array)) {
+        return Promise.reject(new Error('will.payload must be a valid Uint8Array'));
+      }
+      if (will.qos !== undefined && (will.qos < 0 || will.qos > 2 || !Number.isInteger(will.qos))) {
+        return Promise.reject(new Error('will.qos must be an integer between 0 and 2'));
+      }
+      willPayload = will.payload;
+      nativeWill = {
+        topic: will.topic,
+        qos: will.qos ?? 0,
+        retained: will.retained ?? false,
+      };
+    }
+
+    const nativeOptions = {
+      ...restOptions,
+      ...(nativeWill ? { will: nativeWill } : {}),
+    };
+
+    return ExpoNativeMqtt.connect(brokerUrl, username || null, password || null, nativeOptions, willPayload);
   },
 
   disconnect(): Promise<string> {
@@ -60,7 +88,7 @@ export default {
 
   publish(
     topic: string,
-    base64Payload: string,
+    payload: Uint8Array,
     qos: number = 0,
     retained: boolean = false
   ): Promise<string> {
@@ -70,13 +98,13 @@ export default {
     if (topic.includes('+') || topic.includes('#')) {
       return Promise.reject(new Error('Publish topics cannot contain wildcards (+ or #)'));
     }
-    if (!base64Payload || typeof base64Payload !== 'string') {
-      return Promise.reject(new Error('base64Payload must be a valid non-empty base64 string'));
+    if (!(payload instanceof Uint8Array)) {
+      return Promise.reject(new Error('payload must be a valid Uint8Array'));
     }
     if (qos < 0 || qos > 2 || !Number.isInteger(qos)) {
       return Promise.reject(new Error('QoS must be an integer between 0 and 2'));
     }
-    return ExpoNativeMqtt.publish(topic, base64Payload, qos, retained);
+    return ExpoNativeMqtt.publish(topic, payload, qos, retained);
   },
 
   // Typed Events
