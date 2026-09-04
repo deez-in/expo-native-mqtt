@@ -1,6 +1,6 @@
 {
   "name": "expo-native-mqtt",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Native MQTT client for Expo with auto-reconnect and offline delivery support",
   "main": "build/index.js",
   "types": "build/index.d.ts",

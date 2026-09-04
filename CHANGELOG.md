@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.6.0] - 2026-09-04
+## [0.7.0] - 2026-09-04
 
 ### Breaking Changes & Direct Binary Core
 - **API**: Completely removed Base64 encoding and decoding.
